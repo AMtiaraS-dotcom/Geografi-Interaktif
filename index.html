@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Petualangan Geografi - PKBM Surya Alam</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Vue.js 3 CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Canvas Confetti CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <!-- Google Fonts: Fredoka & Nunito -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #e0f2fe;
+            background-image: radial-gradient(#38bdf8 1.5px, transparent 1.5px);
+            background-size: 24px 24px;
+        }
+        
+        h1, h2, h3, .font-heading {
+            font-family: 'Fredoka', cursive;
+        }
+
+        /* Claymorphism Styling */
+        .clay-card {
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 8px 8px 16px #be2e2e00, -8px -8px 16px #ffffff,
+                        inset 2px 2px 4px rgba(255, 255, 255, 0.8),
+                        inset -2px -2px 4px rgba(0, 0, 0, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.6);
+        }
+
+        .clay-box {
+            background: #f0f9ff;
+            border-radius: 20px;
+            box-shadow: inset 4px 4px 8px #cbd5e1, inset -4px -4px 8px #ffffff;
+        }
+
+        .clay-btn {
+            border-radius: 16px;
+            box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.12),
+                        inset 2px 2px 3px rgba(255, 255, 255, 0.6);
+            transition: all 0.2s ease;
+        }
+
+        .clay-btn:active {
+            box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.2);
+            transform: translateY(2px);
+        }
+
+        .clay-badge {
+            border-radius: 12px;
+            box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1), inset 1px 1px 2px rgba(255, 255, 255, 0.8);
+        }
+    </style>
+</head>
+<body class="text-slate-700 min-h-screen pb-12">
+
+<div id="app" class="max-w-5xl mx-auto px-4 py-6">
+
+    <!-- HEADER / BRANDING -->
+    <header class="clay-card p-4 md:p-6 mb-6 flex flex-col md:flex-row justify-between items-center gap-4 bg-white/90 backdrop-blur">
+        <div class="flex items-center gap-4">
+            <!-- Logo Tut Wuri Handayani (SVG Pentagon Custom) -->
+            <svg class="w-16 h-16 filter drop-shadow-md flex-shrink-0" viewBox="0 0 100 100">
+                <!-- Pentagon Base -->
+                <polygon points="50,5 95,38 78,90 22,90 5,38" fill="#0284c7" stroke="#38bdf8" stroke-width="3"/>
+                <!-- Colorful Abstract Wings/Figur -->
+                <path d="M50,25 C35,25 25,40 30,60 C35,50 45,45 50,45 C55,45 65,50 70,60 C75,40 65,25 50,25 Z" fill="#f59e0b"/>
+                <circle cx="50" cy="30" r="7" fill="#ec4899"/>
+                <path d="M30,65 Q50,85 70,65 Q50,75 30,65 Z" fill="#10b981"/>
+            </svg>
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold text-sky-600 tracking-wide">Petualangan Geografi</h1>
+                <p class="text-xs md:text-sm font-semibold text-slate-500">
+                    <i class="fa-solid font-normal fa-school text-sky-500 mr-1"></i> PKBM Surya Alam • Fase E / Kelas X (Kurikulum Merdeka)
+                </p>
+            </div>
+        </div>
+
+        <!-- Gamifikasi & Kontrol Audio -->
+        <div class="flex items-center gap-3 flex-wrap justify-center">
+            <!-- Score & Streak -->
+            <div class="flex items-center gap-2 bg-amber-100 text-amber-800 px-3 py-1.5 rounded-full font-bold text-sm clay-badge">
+                <i class="fa-solid fa-star text-amber-500"></i> Skor: {{ globalScore }}
+            </div>
+            <div class="flex items-center gap-2 bg-rose-100 text-rose-800 px-3 py-1.5 rounded-full font-bold text-sm clay-badge">
+                <i class="fa-solid fa-fire text-rose-500"></i> Streak: {{ streakCount }}
+            </div>
+
+            <!-- BGM Toggle -->
+            <button @click="toggleBGM" class="clay-btn bg-sky-500 hover:bg-sky-600 text-white w-10 h-10 rounded-full flex items-center justify-center">
+                <i :class="bgmOn ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark'"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- NAVIGASI TAB UTAMA -->
+    <nav class="flex gap-2 md:gap-4 mb-6 overflow-x-auto pb-2">
+        <button @click="activeTab = 'geosfer'" 
+                :class="activeTab === 'geosfer' ? 'bg-sky-500 text-white font-bold' : 'bg-white text-slate-600 hover:bg-sky-50'"
+                class="clay-btn px-5 py-3 rounded-2xl flex items-center gap-2 font-heading whitespace-nowrap text-base md:text-lg">
+            <i class="fa-solid fa-globe"></i> 1. Lapisan Geosfer
+        </button>
+        <button @click="activeTab = 'studi-kasus'" 
+                :class="activeTab === 'studi-kasus' ? 'bg-teal-500 text-white font-bold' : 'bg-white text-slate-600 hover:bg-teal-50'"
+                class="clay-btn px-5 py-3 rounded-2xl flex items-center gap-2 font-heading whitespace-nowrap text-base md:text-lg">
+            <i class="fa-solid fa-cloud-showers-heavy"></i> 2. Analisis Bencana & Cinta
+        </button>
+        <button @click="activeTab = 'game'" 
+                :class="activeTab === 'game' ? 'bg-indigo-500 text-white font-bold' : 'bg-white text-slate-600 hover:bg-indigo-50'"
+                class="clay-btn px-5 py-3 rounded-2xl flex items-center gap-2 font-heading whitespace-nowrap text-base md:text-lg">
+            <i class="fa-solid fa-gamepad"></i> 3. Game Menjodohkan
+        </button>
+    </nav>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="clay-card p-6 md:p-8 bg-white/95">
+
+        <!-- TAB 1: SIMULATOR LAPISAN GEOSFER (DRAG & DROP / KLIK INTERAKTIF) -->
+        <section v-if="activeTab === 'geosfer'">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-sky-600">Eksplorasi Lapisan Geosfer</h2>
+                    <p class="text-sm text-slate-500">Klasifikasikan fenomena alam ke dalam lapisan geosfer yang tepat!</p>
+                </div>
+                <button @click="speakText('Eksplorasi Lapisan Geosfer. Klasifikasikan fenomena alam ke dalam lapisan geosfer yang tepat!')" 
+                        class="clay-btn bg-amber-400 hover:bg-amber-500 text-slate-800 px-3 py-1.5 text-xs font-bold rounded-xl flex items-center gap-1">
+                    <i class="fa-solid fa-volume-low"></i> Dengarkan
+                </button>
+            </div>
+
+            <!-- Area Pilihan Kartu Fenomena -->
+            <div class="mb-6 p-4 clay-box">
+                <h3 class="font-heading text-sm text-slate-600 mb-3">Pilih / Tarik Fenomena Alam Di Bawah Ini:</h3>
+                <div class="flex flex-wrap gap-3">
+                    <div v-for="item in unplacedPhenomena" :key="item.id"
+                         @click="selectPhenomenon(item)"
+                         :class="selectedPhenomenon?.id === item.id ? 'ring-4 ring-sky-400 scale-105' : ''"
+                         class="clay-btn bg-white px-4 py-2.5 rounded-xl text-sm font-semibold cursor-pointer border-2 border-sky-100 flex items-center gap-2 hover:bg-sky-50">
+                        <i :class="item.icon" class="text-sky-500"></i>
+                        <span>{{ item.title }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Target Lapisan Geosfer Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div v-for="layer in layers" :key="layer.id" 
+                     @click="placeInLayer(layer.id)"
+                     class="p-4 rounded-2xl border-2 border-dashed border-sky-200 bg-sky-50/50 hover:bg-sky-100/50 transition cursor-pointer min-h-[140px] flex flex-col">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-heading font-bold text-sky-700 text-base flex items-center gap-2">
+                            <i :class="layer.icon" class="text-lg"></i> {{ layer.name }}
+                        </span>
+                        <span class="text-xs bg-sky-200 text-sky-800 font-bold px-2 py-0.5 rounded-md">{{ layer.desc }}</span>
+                    </div>
+
+                    <!-- Items inside layer -->
+                    <div class="flex flex-wrap gap-2 mt-auto">
+                        <div v-for="placed in getPlacedItems(layer.id)" :key="placed.id"
+                             class="bg-sky-500 text-white text-xs px-3 py-1.5 rounded-lg font-bold flex items-center gap-1">
+                            <i :class="placed.icon"></i> {{ placed.title }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-between items-center">
+                <button @click="resetGeosfer" class="text-xs text-slate-400 underline hover:text-slate-600">Reset Jawaban</button>
+                <button @click="checkGeosfer" class="clay-btn bg-sky-500 hover:bg-sky-600 text-white font-bold px-6 py-2.5 rounded-xl">
+                    Periksa Jawaban
+                </button>
+            </div>
+        </section>
+
+        <!-- TAB 2: STUDI KASUS BENCANA & CURRICULUM BERBASIS CINTA -->
+        <section v-if="activeTab === 'studi-kasus'">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-teal-600">Studi Kasus: Banjir & Empati Spasial</h2>
+                    <p class="text-sm text-slate-500">Menganalisis keterkaitan aktivitas manusia dengan bencana[cite: 24]</p>
+                </div>
+                <button @click="speakText('Studi Kasus Bencana Kebanjiran. Pak Budi tinggal di tepi sungai dekat PKBM Surya Alam. Rumahnya sering kebanjiran karena sampah dari daerah hulu.')" 
+                        class="clay-btn bg-amber-400 hover:bg-amber-500 text-slate-800 px-3 py-1.5 text-xs font-bold rounded-xl flex items-center gap-1">
+                    <i class="fa-solid fa-volume-low"></i> Dengarkan Soal
+                </button>
+            </div>
+
+            <!-- Kasus Card -->
+            <div class="bg-teal-50 border border-teal-200 rounded-2xl p-5 mb-6 text-sm text-teal-900 leading-relaxed">
+                <h3 class="font-bold font-heading text-teal-800 text-base mb-1">
+                    <i class="fa-solid fa-house-flood-water text-rose-500 mr-2"></i>Kisah Pak Budi di PKBM Surya Alam[cite: 24]
+                </h3>
+                "Pak Budi tinggal di tepi sungai dekat PKBM Surya Alam. Belakangan ini rumahnya sering kebanjiran karena tumpukan sampah plastik yang dibuang warga dari daerah hulu[cite: 24]."
+            </div>
+
+            <!-- Interaktif Pertanyaan Analisis -->
+            <div class="space-y-6">
+                <div>
+                    <label class="block font-heading font-semibold text-slate-700 mb-2">
+                        1. Mengapa aktivitas warga Hulu berdampak pada Pak Budi di Hilir? (Konsep Geografi)[cite: 24]
+                    </label>
+                    <div class="space-y-2">
+                        <label v-for="(opt, idx) in caseOptions1" :key="idx" 
+                               class="flex items-center p-3 rounded-xl border-2 border-slate-100 hover:bg-slate-50 cursor-pointer font-medium text-sm">
+                            <input type="radio" v-model="caseAnswer1" :value="idx" class="w-4 h-4 text-teal-600 mr-3">
+                            <span>{{ opt }}</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-heading font-semibold text-slate-700 mb-2">
+                        2. Aksinya: Bagaimana bentuk Kurikulum Berbasis Cinta (Empati Spasial) untuk kasus ini[cite: 24]?
+                    </label>
+                    <textarea v-model="caseAction" placeholder="Tuliskan gagasan aksi nyatamu (misal: Biopori, Kerja bakti)..." 
+                              class="w-full p-4 border-2 border-slate-200 rounded-2xl focus:ring-2 focus:ring-teal-400 text-sm focus:outline-none min-h-[100px]"></textarea>
+                </div>
+
+                <button @click="submitCaseStudy" class="clay-btn bg-teal-500 hover:bg-teal-600 text-white font-bold px-6 py-2.5 rounded-xl w-full">
+                    Kirim Analisis & Aksi Cinta Lingkungan
+                </button>
+            </div>
+        </section>
+
+        <!-- TAB 3: GAME MENJODOHKAN (MATCHING GAME - 3 LEVEL) -->
+        <section v-if="activeTab === 'game'">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-indigo-600">Game Menjodohkan Konsep Geografi</h2>
+                    <p class="text-sm text-slate-500">Pasangkan konsep geografi dengan penjelasan/contoh yang tepat[cite: 24]!</p>
+                </div>
+                <!-- Select Level -->
+                <div class="flex gap-1 bg-slate-100 p-1 rounded-xl">
+                    <button v-for="lvl in [1, 2, 3]" :key="lvl" @click="setLevel(lvl)"
+                            :class="currentLevel === lvl ? 'bg-indigo-500 text-white' : 'text-slate-600'"
+                            class="px-3 py-1 rounded-lg text-xs font-bold transition">
+                        Lvl {{ lvl }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Board Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <!-- Kolom Kiri: Konsep -->
+                <div class="space-y-3">
+                    <h3 class="font-heading text-sm text-slate-500 mb-2">ISTILAH / KONSEP</h3>
+                    <div v-for="item in currentMatching.left" :key="item.id"
+                         @click="selectMatchLeft(item)"
+                         :class="[
+                             selectedLeft?.id === item.id ? 'ring-4 ring-indigo-400 bg-indigo-50' : 'bg-white',
+                             matchedIds.includes(item.id) ? 'opacity-40 pointer-events-none bg-emerald-50 border-emerald-300' : 'hover:bg-slate-50'
+                         ]"
+                         class="clay-btn p-4 rounded-xl border-2 border-slate-200 flex items-center justify-between cursor-pointer font-bold text-sm text-slate-700">
+                        <span>{{ item.text }}</span>
+                        <i v-if="matchedIds.includes(item.id)" class="fa-solid fa-circle-check text-emerald-500 text-lg"></i>
+                    </div>
+                </div>
+
+                <!-- Kolom Kanan: Definisi / Contoh -->
+                <div class="space-y-3">
+                    <h3 class="font-heading text-sm text-slate-500 mb-2">PENJELASAN / CONTOH</h3>
+                    <div v-for="item in currentMatching.right" :key="item.id"
+                         @click="selectMatchRight(item)"
+                         :class="[
+                             selectedRight?.id === item.id ? 'ring-4 ring-indigo-400 bg-indigo-50' : 'bg-white',
+                             matchedIds.includes(item.matchId) ? 'opacity-40 pointer-events-none bg-emerald-50 border-emerald-300' : 'hover:bg-slate-50'
+                         ]"
+                         class="clay-btn p-4 rounded-xl border-2 border-slate-200 flex items-center justify-between cursor-pointer font-medium text-sm text-slate-600">
+                        <span>{{ item.text }}</span>
+                        <i v-if="matchedIds.includes(item.matchId)" class="fa-solid fa-circle-check text-emerald-500 text-lg"></i>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<script>
+const { createApp } = Vue;
+
+createApp({
+    data() {
+        return {
+            activeTab: 'geosfer',
+            globalScore: 0,
+            streakCount: 0,
+            bgmOn: false,
+            
+            // Audio BGM Synthesizer via Web Audio API
+            audioCtx: null,
+
+            // Tab 1: Geosfer Data
+            selectedPhenomenon: null,
+            placedMap: {}, // id -> layerId
+            phenomena: [
+                { id: 1, title: 'Batuan & Tanah Longsor', icon: 'fa-solid fa-mountain', target: 'lithosfer' },
+                { id: 2, title: 'Sungai & Air Tanah', icon: 'fa-solid fa-water', target: 'hidrosfer' },
+                { id: 3, title: 'Cuaca & Perubahan Iklim', icon: 'fa-solid fa-cloud-sun-rain', target: 'atmosfer' },
+                { id: 4, title: 'Aktivitas Pemukiman Warga', icon: 'fa-solid fa-users', target: 'antroposfer' }
+            ],
+            layers: [
+                { id: 'lithosfer', name: 'Lithosfer', desc: 'Lapisan Batuan / Daratan', icon: 'fa-solid fa-mountain-city' },
+                { id: 'hidrosfer', name: 'Hidrosfer', desc: 'Lapisan Air', icon: 'fa-solid fa-droplet' },
+                { id: 'atmosfer', name: 'Atmosfer', desc: 'Lapisan Udara / Iklim', icon: 'fa-solid fa-wind' },
+                { id: 'antroposfer', name: 'Antroposfer / Biosfer', desc: 'Manusia & Flora Fauna', icon: 'fa-solid fa-tree' }
+            ],
+
+            // Tab 2: Studi Kasus
+            caseOptions1: [
+                'Konsep Morfologi (Bentuk Permukaan Muka Bumi)',
+                'Konsep Keterkaitan Keruangan (Dampak hulu berpengaruh ke hilir)[cite: 24]',
+                'Konsep Lokasi Absolut (Titik Koordinat Tetap)'
+            ],
+            caseAnswer1: null,
+            caseAction: '',
+
+            // Tab 3: Matching Game
+            currentLevel: 1,
+            selectedLeft: null,
+            selectedRight: null,
+            matchedIds: [],
+            levels: {
+                1: {
+                    left: [
+                        { id: 101, text: 'Lithosfer' },
+                        { id: 102, text: 'Hidrosfer' },
+                        { id: 103, text: 'Antroposfer' }
+                    ],
+                    right: [
+                        { id: 202, matchId: 102, text: 'Lapisan Air (Sungai, Danau, Air Tanah)' },
+                        { id: 201, matchId: 101, text: 'Lapisan Batuan dan Kerak Bumi' },
+                        { id: 203, matchId: 103, text: 'Lapisan Manusia dan Penataan Ruang' }
+                    ]
+                },
+                2: {
+                    left: [
+                        { id: 104, text: 'Keterkaitan Keruangan' },
+                        { id: 105, text: 'Lubang Biopori' },
+                        { id: 106, text: 'Penyebab Banjir Hilir' }
+                    ],
+                    right: [
+                        { id: 205, matchId: 105, text: 'Upaya Pelestarian Resapan Air Tanah' },
+                        { id: 204, matchId: 104, text: 'Hubungan timbal balik antar wilayah' },
+                        { id: 206, matchId: 106, text: 'Sampah buangan dari daerah Hulu' }
+                    ]
+                },
+                3: {
+                    left: [
+                        { id: 107, text: 'Deep Learning' },
+                        { id: 108, text: 'Empati Spasial' },
+                        { id: 109, text: 'Atmosfer' }
+                    ],
+                    right: [
+                        { id: 209, matchId: 109, text: 'Fenomena Cuaca dan Iklim Global' },
+                        { id: 207, matchId: 107, text: 'Mindful, Meaningful, & Joyful Learning' },
+                        { id: 208, matchId: 108, text: 'Kepedulian terhadap keselamatan sesama' }
+                    ]
+                }
+            }
+        };
+    },
+    computed: {
+        unplacedPhenomena() {
+            return this.phenomena.filter(p => !this.placedMap[p.id]);
+        },
+        currentMatching() {
+            return this.levels[this.currentLevel];
+        }
+    },
+    methods: {
+        // Text-To-Speech
+        speakText(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'id-ID';
+                window.speechSynthesis.speak(utterance);
+            }
+        },
+
+        // Audio BGM Synthesizer (No External Audio File Needed)
+        toggleBGM() {
+            this.bgmOn = !this.bgmOn;
+            if (this.bgmOn) {
+                this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                this.playMelody();
+            } else if (this.audioCtx) {
+                this.audioCtx.close();
+            }
+        },
+        playMelody() {
+            if (!this.bgmOn) return;
+            const notes = [261.63, 293.66, 329.63, 349.23, 392.00];
+            const osc = this.audioCtx.createOscillator();
+            const gain = this.audioCtx.createGain();
+            osc.frequency.value = notes[Math.floor(Math.random() * notes.length)];
+            gain.gain.value = 0.02;
+            osc.connect(gain);
+            gain.connect(this.audioCtx.destination);
+            osc.start();
+            osc.stop(this.audioCtx.currentTime + 0.4);
+            setTimeout(() => this.playMelody(), 600);
+        },
+
+        // Tab 1 Logic
+        selectPhenomenon(item) {
+            this.selectedPhenomenon = item;
+        },
+        placeInLayer(layerId) {
+            if (this.selectedPhenomenon) {
+                this.placedMap[this.selectedPhenomenon.id] = layerId;
+                this.selectedPhenomenon = null;
+            }
+        },
+        getPlacedItems(layerId) {
+            return this.phenomena.filter(p => this.placedMap[p.id] === layerId);
+        },
+        resetGeosfer() {
+            this.placedMap = {};
+            this.selectedPhenomenon = null;
+        },
+        checkGeosfer() {
+            let correct = 0;
+            this.phenomena.forEach(p => {
+                if (this.placedMap[p.id] === p.target) correct++;
+            });
+            if (correct === this.phenomena.length) {
+                this.globalScore += 50;
+                this.streakCount++;
+                confetti({ particleCount: 80, spread: 60 });
+                alert('Sempurna! Semua klasifikasi geosfer tepat (+50 poin).');
+            } else {
+                alert(`Kamu berhasil menjawab ${correct} dari ${this.phenomena.length} dengan benar. Coba periksa kembali!`);
+            }
+        },
+
+        // Tab 2 Logic
+        submitCaseStudy() {
+            if (this.caseAnswer1 === 1 && this.caseAction.trim() !== '') {
+                this.globalScore += 40;
+                this.streakCount++;
+                confetti({ particleCount: 100, spread: 70 });
+                alert('Hebat! Analisis keterkaitan keruangan dan gagasan aksi cintamu sangat luar biasa (+40 Poin)!');
+            } else {
+                alert('Mohon pilih opsi jawaban konsep geografi yang tepat dan tuliskan gagasan aksimu!');
+            }
+        },
+
+        // Tab 3 Logic
+        setLevel(lvl) {
+            this.currentLevel = lvl;
+            this.selectedLeft = null;
+            this.selectedRight = null;
+            this.matchedIds = [];
+        },
+        selectMatchLeft(item) {
+            this.selectedLeft = item;
+            this.checkMatch();
+        },
+        selectMatchRight(item) {
+            this.selectedRight = item;
+            this.checkMatch();
+        },
+        checkMatch() {
+            if (this.selectedLeft && this.selectedRight) {
+                if (this.selectedRight.matchId === this.selectedLeft.id) {
+                    this.matchedIds.push(this.selectedLeft.id);
+                    this.globalScore += 20;
+                    this.streakCount++;
+                    
+                    // Check if level completed
+                    if (this.matchedIds.length === this.currentMatching.left.length) {
+                        confetti({ particleCount: 120, spread: 80 });
+                        setTimeout(() => {
+                            alert(`Selamat! Kamu menyelesaikan Level ${this.currentLevel}!`);
+                        }, 300);
+                    }
+                } else {
+                    this.streakCount = 0;
+                }
+                this.selectedLeft = null;
+                this.selectedRight = null;
+            }
+        }
+    }
+}).mount('#app');
+</script>
+</body>
+</html>
